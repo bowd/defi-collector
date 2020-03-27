@@ -1,0 +1,12 @@
+[submodule "vendor/proxy-registry"]
+	path = vendor/proxy-registry
+	url = https://github.com/makerdao/proxy-registry
+[submodule "vendor/dss-cdp-manager"]
+	path = vendor/dss-cdp-manager
+	url = git@github.com:makerdao/dss-cdp-manager.git
+[submodule "vendor/dss"]
+	path = vendor/dss
+	url = https://github.com/makerdao/dss
+[submodule "vendor/dss-deploy"]
+	path = vendor/dss-deploy
+	url = https://github.com/makerdao/dss-deploy
