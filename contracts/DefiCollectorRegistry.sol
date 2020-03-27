@@ -1,5 +1,4 @@
-pragma solidity >=0.4.25 <0.7.0;
-pragma experimental ABIEncoderV2;
+pragma solidity >=0.4.25 <0.7.0; pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
@@ -11,7 +10,7 @@ contract DefiCollectorRegistry is Ownable {
 	mapping(bytes32 => uint) collectorIndex;
 	mapping(bytes32 => address) collectorAddresses;
 
-    constructor(bytes32[] ids, address[] addresses) Ownable() public {
+    constructor(bytes32[] memory ids, address[] memory addresses) Ownable() public {
         for (uint i = 0; i < ids.length; i++) {
             setCollector(ids[i], addresses[i]);
         }
@@ -36,8 +35,8 @@ contract DefiCollectorRegistry is Ownable {
         collectorAddresses[id] = address(0);
 	}
 
-	function getPositions(address target) public view returns(Defi.Platform[] memory platforms) {
-		platforms = new Defi.Platform[](collectors.length);
+	function getPositions(address target) public view returns(Defi.Platform[] memory) {
+		Defi.Platform[] memory platforms = new Defi.Platform[](collectors.length);
 		for (uint i = 0; i < collectors.length; i++) {
 			bytes32 id = collectors[i];
 			address addr = collectorAddresses[id];
