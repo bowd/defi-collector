@@ -1,8 +1,16 @@
 # DefiCollector
 
-![License](https://img.shields.io/github/license/bowd/deficollector)
-[![CircleCI](https://circleci.com/gh/bowd/deficollector.svg?style=shield)](https://circleci.com/gh/cleanunicorn/deficollector)
-![Version](https://img.shields.io/github/package-json/v/bowd/deficollector)
+![License](https://img.shields.io/github/license/bowd/defi-collector)
+[![CircleCI](https://circleci.com/gh/bowd/deficollector.svg?style=shield)](https://circleci.com/gh/bowd/defi-collector)
+![Version](https://img.shields.io/github/package-json/v/bowd/defi-collector)
+
+## Deployment:
+
+| Contract | Kovan | Mainnet |
+|----------|-------|---------|
+| DefiCollectorRegistry | [0x6ed41941461D88944Ee9ab8dDd69BFeC4A325051](kovan.etherscan.com/address/0x6ed41941461D88944Ee9ab8dDd69BFeC4A325051) | N/A |
+| MakerCollector | [0x41356a6541c47Ab71C1C9200E86Cf22F58560A66](kovan.etherscan.com/address/0x41356a6541c47Ab71C1C9200E86Cf22F58560A66) | N/A |
+| CompoundCollector | [0x6b090e2C646545708A7f5d5DAC4c3C31d41D2831](kovan.etherscan.com/address/0x6ed41941461D88944Ee9ab8dDd69BFeC4A325051) | N/A |
 
 ## Description
 
