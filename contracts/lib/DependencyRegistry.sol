@@ -1,5 +1,4 @@
 pragma solidity >=0.4.25 <0.7.0;
-pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
@@ -24,7 +23,7 @@ contract DependencyRegistry is Ownable {
     function getDependency(uint8 index) public view returns (address) {
         require(index < maxDeps, "dependency-registry:index-out-of-range");
         address addr = dependencies[index];
-        // require(addr > address(0), "dependency-registry:dep-not-set");
+        require(addr != address(0), "dependency-registry:dep-not-set");
         return addr;
     }
 }

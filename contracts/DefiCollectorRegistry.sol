@@ -1,48 +1,45 @@
-pragma solidity >=0.4.25 <0.7.0; pragma experimental ABIEncoderV2;
+pragma solidity >=0.4.25 <0.7.0;
+pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
-import "./Defi.sol";
 import "./IDefiPlatformCollector.sol";
+import "./lib/Defi.sol";
 
 contract DefiCollectorRegistry is Ownable {
-	bytes32[] collectors;
-	mapping(bytes32 => uint) collectorIndex;
-	mapping(bytes32 => address) collectorAddresses;
+	address[] collectors;
+	mapping(address => uint) collectorIndex;
 
-    constructor(bytes32[] memory ids, address[] memory addresses) Ownable() public {
-        for (uint i = 0; i < ids.length; i++) {
-            setCollector(ids[i], addresses[i]);
+    constructor(address[] memory addresses) Ownable() public {
+        for (uint i = 0; i < addresses.length; i++) {
+            addCollector(addresses[i]);
         }
     }
 
-	function setCollector(bytes32 id, address ctr) public onlyOwner {
-		if (collectorIndex[id] == 0) {
-			collectors.push(id);
-			collectorIndex[id] = collectors.length;
+	function addCollector(address collectorAddress) public onlyOwner {
+        IDefiPlatformCollector collector = IDefiPlatformCollector(collectorAddress);
+        require(collector.isDefiPlatformCollector(), "collector-registry:not-a-defi-collector");
+		if (collectorIndex[collectorAddress] == 0) {
+			collectors.push(collectorAddress);
+			collectorIndex[collectorAddress] = collectors.length;
 		}
-        collectorAddresses[id] = ctr;
 	}
 
-	function removeCollector(bytes32 id) public onlyOwner {
-        uint256 index = collectorIndex[id];
+	function removeCollector(address collector) public onlyOwner {
+        uint256 index = collectorIndex[collector];
 		require(index > 0);
 
-		bytes32 lastItem = collectors[collectors.length - 1];
+		address lastItem = collectors[collectors.length - 1];
 		collectors[index - 1] = lastItem;
 		collectors.length -= 1;
-		collectorIndex[id] = 0;
-        collectorAddresses[id] = address(0);
+		collectorIndex[collector] = 0;
 	}
 
-	function getPositions(address target) public view returns(Defi.Platform[] memory) {
-		Defi.Platform[] memory platforms = new Defi.Platform[](collectors.length);
+	function getPositions(address target) public view returns(Defi.PlatformResult[] memory) {
+		Defi.PlatformResult[] memory platforms = new Defi.PlatformResult[](collectors.length);
 		for (uint i = 0; i < collectors.length; i++) {
-			bytes32 id = collectors[i];
-			address addr = collectorAddresses[id];
-			IDefiPlatformCollector collector = IDefiPlatformCollector(addr);
-            (Defi.Position[] memory borrows, Defi.Position[] memory supplies) = collector.getPositions(target);
-            platforms[i] = Defi.Platform(id, borrows, supplies);
+			IDefiPlatformCollector collector = IDefiPlatformCollector(collectors[i]);
+            platforms[i] = collector.getPositions(target);
 		}
         return platforms;
 	}

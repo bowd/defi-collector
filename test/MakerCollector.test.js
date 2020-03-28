@@ -1,4 +1,4 @@
-const {describe, beforeEach, it} = require("mocha");
+const {describe, beforeEach, afterEach, it} = require("mocha");
 const abi = require('ethereumjs-abi');
 // var BN = require('bn.js');
 
@@ -30,18 +30,15 @@ const [ owner, acc0, proxy, urn, pip, cdpManager ] = accounts;
 
 describe("MakerCollector", async () => {
     context('deploy', async () => {
-        beforeEach(async () => {
-            this.makerCollector = await MakerCollector.new([acc0])
-        });
-
         it('deploys successfully', async () => {
-            expect(this.makerCollector.address != null)
+            let collector = await MakerCollector.new([]);
+            expect(collector.address != null);
         });
 
         it('deploys with the right number of deps', async () => {
-            let mc = await MakerCollector.new([acc0, acc0, acc0, acc0]);
-            expect(mc.address != null);
-        })
+            let collector = await MakerCollector.new([acc0, acc0, acc0, acc0]);
+            expect(collector.address != null);
+        });
 
         it('fails if the initial deps is too large', async () => {
             expectRevert(
@@ -52,14 +49,36 @@ describe("MakerCollector", async () => {
     });
 
     context('getPositions', async () => {
+        let proxyRegistry, getCdps, vat, jug, spotter, deploy, collector;
+
+        before(async () => {
+            proxyRegistry = await MockContract.new();
+            getCdps = await MockContract.new();
+            vat = await MockContract.new();
+            jug = await MockContract.new();
+            spotter = await MockContract.new();
+            deploy = await MockContract.new();
+            collector = await MakerCollector.new([
+                proxyRegistry.address,
+                getCdps.address,
+                deploy.address,
+                cdpManager,
+            ])
+        });
+
+        afterEach(async () => {
+            await Promise.all([
+                proxyRegistry, getCdps, vat, jug, spotter, deploy
+            ].map(mock => mock.reset()));
+        });
+
         beforeEach(async () => {
-            this.mockProxyRegistry = await MockContract.new();
-            this.mockProxyRegistry.givenMethodReturnAddress(
+            await proxyRegistry.givenMethodReturnAddress(
                 abi.methodID("proxies", ['address']),
                 proxy
             );
-            this.mockGetCdps = await MockContract.new();
-            this.mockGetCdps.givenMethodReturn(
+
+            await getCdps.givenMethodReturn(
                 abi.methodID("getCdpsAsc", ['address', 'address']),
                 abi.rawEncode(
                     ['uint256[]', 'address[]', 'bytes32[]'],
@@ -71,8 +90,7 @@ describe("MakerCollector", async () => {
                 )
             );
 
-            this.mockVat = await MockContract.new();
-            this.mockVat.givenMethodReturn(
+            await vat.givenMethodReturn(
                 abi.methodID("ilks", ['bytes32']),
                 abi.rawEncode(
                     ['uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
@@ -85,7 +103,8 @@ describe("MakerCollector", async () => {
                     ]
                 )
             );
-            this.mockVat.givenMethodReturn(
+
+            await vat.givenMethodReturn(
                 abi.methodID('urns', ['bytes32', 'address']),
                 abi.rawEncode(
                     ['uint256', 'uint256'],
@@ -93,8 +112,7 @@ describe("MakerCollector", async () => {
                 )
             );
 
-            this.mockJug = await MockContract.new();
-            this.mockJug.givenMethodReturn(
+            await jug.givenMethodReturn(
                 abi.methodID('ilks', ['bytes32']),
                 abi.rawEncode(
                     ['uint256', 'uint256'],
@@ -102,8 +120,7 @@ describe("MakerCollector", async () => {
                 )
             );
 
-            this.mockSpotter = await MockContract.new();
-            this.mockSpotter.givenMethodReturn(
+            await spotter.givenMethodReturn(
                 abi.methodID('ilks', ['bytes32']),
                 abi.rawEncode(
                     ['address', 'uint256'],
@@ -111,32 +128,26 @@ describe("MakerCollector", async () => {
                 )
             );
 
-            this.mockDeploy = await MockContract.new();
-            this.mockDeploy.givenMethodReturnAddress(
+            await deploy.givenMethodReturnAddress(
                 abi.methodID("vat", []),
-                this.mockVat.address
+                vat.address
             );
-            this.mockDeploy.givenMethodReturnAddress(
+            await deploy.givenMethodReturnAddress(
                 abi.methodID("spotter", []),
-                this.mockSpotter.address
+                spotter.address
             );
-            this.mockDeploy.givenMethodReturnAddress(
+            await deploy.givenMethodReturnAddress(
                 abi.methodID("jug", []),
-                this.mockJug.address
+                jug.address
             );
-
-            this.makerCollector = await MakerCollector.new([
-                this.mockProxyRegistry.address,
-                this.mockGetCdps.address,
-                this.mockDeploy.address,
-                cdpManager,
-            ])
         });
 
         it('returns correct data', async () => {
-            const positions = await this.makerCollector.getPositions(owner);
-            const borrows = positions[0];
-            const supplies = positions[1];
+            const positions = await collector.getPositions(owner);
+            const platformID = positions[0];
+            const borrows = positions[1];
+            const supplies = positions[2];
+            expect(platformID === 0x4d616b65724d4344000000000000000000000000000000000000000000000000); // MakerMCD
             expect(borrows.length === 1);
             expect(supplies.length === 1);
             expect(borrows[0]).to.deep.equal([

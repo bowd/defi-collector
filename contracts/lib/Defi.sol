@@ -1,5 +1,4 @@
 pragma solidity >=0.4.25 <0.7.0;
-pragma experimental ABIEncoderV2;
 
 library Defi {
     struct Position {
@@ -11,7 +10,7 @@ library Defi {
         bytes interestRateData;      // data required to compute the interest rate off-chain
     }
 
-    struct Platform {
+    struct PlatformResult {
         bytes32 id;
         Position[] borrowPositions;
         Position[] supplyPositions;

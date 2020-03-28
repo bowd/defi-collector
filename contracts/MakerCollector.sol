@@ -3,10 +3,6 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
 
-import "./IDefiPlatformCollector.sol";
-import "./DependencyRegistry.sol";
-import "./Defi.sol";
-
 import "./interfaces/maker/IProxyRegistry.sol";
 import "./interfaces/maker/IGetCdps.sol";
 import "./interfaces/maker/IVat.sol";
@@ -14,9 +10,14 @@ import "./interfaces/maker/ISpotter.sol";
 import "./interfaces/maker/IDssDeploy.sol";
 import "./interfaces/maker/IJug.sol";
 
-contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry {
-    bytes32 platformID = 0x4d616b65724d4344000000000000000000000000000000000000000000000000; // MakerMCD
-    bool isDefiPlatformCollector = true;
+import "./IDefiPlatformCollector.sol";
+import "./lib/DependencyRegistry.sol";
+import "./lib/PositionsHelper.sol";
+
+contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, PositionsHelper {
+    bytes32 platformID_ = 0x4d616b65724d4344000000000000000000000000000000000000000000000000; // MakerMCD
+    function isDefiPlatformCollector() public pure returns (bool) { return true; }
+    function platformID() public view returns (bytes32) { return platformID_; }
 
     uint8 constant ProxyRegistryIndex = 0;
     uint8 constant GetCdpsIndex = 1;
@@ -65,7 +66,7 @@ contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry {
         return (rate, spot, ink, art, mat, duty);
     }
 
-    function getPositions(address target) public view returns (Defi.Position[] memory, Defi.Position[] memory) {
+    function getPositions(address target) public view returns (Defi.PlatformResult memory) {
         (uint256[] memory ids, address[] memory urns, bytes32[] memory ilks) = getCdps(target);
         Defi.Position[] memory borrows = new Defi.Position[](ids.length);
         Defi.Position[] memory supplies = new Defi.Position[](ids.length);
@@ -96,14 +97,10 @@ contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry {
             }
         }
 
-        if (borrowIndex < ids.length) {
-            Defi.Position[] memory resizedBorrows = new Defi.Position[](borrowIndex);
-            for (uint8 i = 0; i < borrowIndex; i++) {
-                resizedBorrows[i] = borrows[i];
-            }
-            return (resizedBorrows, supplies);
-        } else {
-            return (borrows, supplies);
-        }
+        return Defi.PlatformResult(
+            platformID_,
+            repackPositions(borrows, borrowIndex),
+            supplies
+        );
     }
 }

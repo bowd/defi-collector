@@ -1,5 +1,4 @@
 pragma solidity >=0.4.25 <0.7.0;
-pragma experimental ABIEncoderV2;
 
 interface ICToken {
     function getAccountSnapshot(address) external view returns (uint, uint, uint, uint);

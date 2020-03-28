@@ -1,34 +1,25 @@
 pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
-import "./IDefiPlatformCollector.sol";
-import "./DependencyRegistry.sol";
-
 import "./interfaces/compound/IPriceOracle.sol";
 import "./interfaces/compound/IComptroller.sol";
 import "./interfaces/compound/ICToken.sol";
+
+import "./IDefiPlatformCollector.sol";
 import "./lib/Exponential.sol";
 import "./lib/CarefulMath.sol";
+import "./lib/PositionsHelper.sol";
+import "./lib/DependencyRegistry.sol";
 
-contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, Exponential {
-    bytes32 platformID = 0x436f6d706f756e64000000000000000000000000000000000000000000000000; // Compound
-    bool isDefiPlatformCollector = true;
+contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, Exponential, PositionsHelper {
+    bytes32 platformID_ = 0x436f6d706f756e64000000000000000000000000000000000000000000000000; // Compound
+    function isDefiPlatformCollector() public pure returns (bool) { return true; }
+    function platformID() public view returns (bytes32) { return platformID_; }
 
     uint8 constant IComptrollerIndex = 0;
     uint8 constant IPriceOracleIndex = 1;
 
     constructor(address[] memory initialDeps) DependencyRegistry(initialDeps, 2) Ownable() public {}
-
-    function repackPositions(Defi.Position[] memory positions, uint32 actualLength) public pure returns (Defi.Position[] memory) {
-        if (positions.length > actualLength) {
-            Defi.Position[] memory resizedPositions = new Defi.Position[](actualLength);
-            for (uint8 i = 0; i < actualLength; i++) {
-                resizedPositions[i] = positions[i];
-            }
-            return resizedPositions;
-        }
-        return positions;
-    }
 
     function hasSupply(address target, address asset) internal view returns (bool) {
         return getSupplyAmount(target, asset) > 0;
@@ -100,7 +91,7 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
         );
     }
 
-    function getPositions(address target) public view returns (Defi.Position[] memory, Defi.Position[] memory) {
+    function getPositions(address target) public view returns (Defi.PlatformResult memory) {
         IPriceOracle oracle = IPriceOracle(getDependency(IPriceOracleIndex));
         IComptroller comp = IComptroller(getDependency(IComptrollerIndex));
 
@@ -137,7 +128,8 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
             borrows[i].colRatio = colRatio;
         }
 
-        return (
+        return Defi.PlatformResult(
+            platformID_,
             repackPositions(borrows, borrowIndex),
             repackPositions(supplies, supplyIndex)
         );

@@ -16,61 +16,69 @@ const {
 } = require('@openzeppelin/test-helpers');
 
 const DependencyRegistry = contract.fromArtifact('DependencyRegistry');
-const [ owner, acc0, acc1 ] = accounts;
+const [ owner, notOwner, dep0, dep1, dep2, dep3 ] = accounts;
 
 describe("DependencyRegistry", async () => {
-    beforeEach(async () => {
-        this.dependencyRegistry = await DependencyRegistry.new([acc0], 3)
-    });
-
     context('deploy', async () => {
         it('deploys successfully', async () => {
-            expect(this.dependencyRegistry.address != null)
+            const registry = await DependencyRegistry.new([], 1);
+            expect(registry.address != null)
         });
 
         it('fails if the initial deps is too large', async () => {
             expectRevert(
-                DependencyRegistry.new([acc0, acc0, acc0, acc0], 3),
+                DependencyRegistry.new([dep0, dep1, dep2, dep3], 3),
                 "dependency-registry:initial-deps-too-large"
             );
         })
     });
 
     context('reading dependencies', async () => {
+        let registry;
+        before(async () => {
+            registry = await DependencyRegistry.new([dep0], 3)
+        });
+
         it('reverts when it is not set', async () => {
             expectRevert(
-                this.dependencyRegistry.getDependency(1),
+                registry.getDependency(1),
                 "dependency-registry:dep-not-set"
             );
         });
 
         it('returns the dependency set on deploy', async () => {
-            expect(this.dependencyRegistry.getDependency(0) == acc0);
+            const dep = await registry.getDependency(0);
+            expect(dep === dep0);
         });
 
         it('returns the dependency set manually', async () => {
-            await this.dependencyRegistry.setDependency(1, acc1);
-            expect(this.dependencyRegistry.getDependency(1) == acc1);
+            await registry.setDependency(1, dep1);
+            expect(await registry.getDependency(1) === dep1);
         });
 
-        it('revert when reading out of bounds', async () => {
+        it('reverts when reading out of bounds', async () => {
             expectRevert(
-                this.dependencyRegistry.getDependency(5),
+                registry.getDependency(5),
                 "dependency-registry:index-out-of-range"
             );
         });
     });
 
     context('setting dependencies', async () => {
+        let registry;
+        before(async () => {
+            registry = await DependencyRegistry.new([], 3)
+        });
+
         it('reverts when it is not the owner', async () => {
             expectRevert(
-                this.dependencyRegistry.setDependency(5, acc1, { from: acc0 }),
+                registry.setDependency(2, dep2, { from: notOwner }),
                 "Ownable: caller is not the owner."
             );
         });
         it('reverts when the index is out of range', async () => {
             expectRevert(
-                this.dependencyRegistry.setDependency(5, acc1),
+                registry.setDependency(5, dep2),
                 "dependency-registry:index-out-of-range"
             );
         });
