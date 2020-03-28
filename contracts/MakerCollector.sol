@@ -15,6 +15,9 @@ import "./interfaces/maker/IDssDeploy.sol";
 import "./interfaces/maker/IJug.sol";
 
 contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry {
+    bytes32 platformID = 0x4d616b65724d4344000000000000000000000000000000000000000000000000; // MakerMCD
+    bool isDefiPlatformCollector = true;
+
     uint8 constant ProxyRegistryIndex = 0;
     uint8 constant GetCdpsIndex = 1;
     uint8 constant DeployIndex = 2;

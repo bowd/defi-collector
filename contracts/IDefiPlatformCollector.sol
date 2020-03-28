@@ -5,4 +5,6 @@ import "./Defi.sol";
 
 interface IDefiPlatformCollector {
     function getPositions(address target) external view returns (Defi.Position[] memory, Defi.Position[] memory);
+    function isDefiPlatformCollector() external view returns (bool);
+    function platformID() external view returns (bytes32);
 }

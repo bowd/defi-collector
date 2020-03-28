@@ -7,15 +7,19 @@ import "./DependencyRegistry.sol";
 import "./interfaces/compound/IPriceOracle.sol";
 import "./interfaces/compound/IComptroller.sol";
 import "./interfaces/compound/ICToken.sol";
+import "./lib/Exponential.sol";
+import "./lib/CarefulMath.sol";
 
-contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistry {
+contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, Exponential {
+    bytes32 platformID = 0x436f6d706f756e64000000000000000000000000000000000000000000000000; // Compound
+    bool isDefiPlatformCollector = true;
+
     uint8 constant IComptrollerIndex = 0;
     uint8 constant IPriceOracleIndex = 1;
 
-
     constructor(address[] memory initialDeps) DependencyRegistry(initialDeps, 2) Ownable() public {}
 
-    function repackPositions(Defi.Position[] memory positions, uint8 actualLength) public pure returns (Defi.Position[] memory) {
+    function repackPositions(Defi.Position[] memory positions, uint32 actualLength) public pure returns (Defi.Position[] memory) {
         if (positions.length > actualLength) {
             Defi.Position[] memory resizedPositions = new Defi.Position[](actualLength);
             for (uint8 i = 0; i < actualLength; i++) {
@@ -26,36 +30,73 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
         return positions;
     }
 
-    function hasSupply(address target, ICToken asset) internal view returns (bool) {
-        uint supplyBalance = asset.balanceOfUnderlying(target);
-        return supplyBalance > 0;
+    function hasSupply(address target, address asset) internal view returns (bool) {
+        return getSupplyAmount(target, asset) > 0;
     }
 
-    function hasBorrow(address target, ICToken asset) internal view returns (bool) {
-        (,,uint borrowBalance,) = asset.getAccountSnapshot(target);
-        return borrowBalance > 0;
+    function hasBorrow(address target, address asset) internal view returns (bool) {
+        return getBorrowAmount(target, asset) > 0;
     }
 
-    function getSupply(address target, ICToken asset) internal view returns (Defi.Position memory) {
+    function getPositionID(address asset) internal pure returns (bytes memory) {
+        return abi.encode(asset);
+    }
+
+    function getPositionCurrency(address asset) internal view returns (bytes memory) {
+        ICToken token = ICToken(asset);
+        return abi.encode(asset, token.name());
+    }
+
+    function getSupplyAmount(address target, address asset) internal view returns (uint) {
+        ICToken token = ICToken(asset);
+        (,uint tokenBalance,,uint exchangeRateCurrent) = token.getAccountSnapshot(target);
+        Exp memory exchangeRate = Exp({mantissa: exchangeRateCurrent});
+        (MathError mErr, uint balance) = mulScalarTruncate(exchangeRate, tokenBalance);
+        require(mErr == MathError.NO_ERROR, "balance could not be calculated");
+        return balance;
+    }
+
+    function getBorrowAmount(address target, address asset) internal view returns (uint) {
+        ICToken token = ICToken(asset);
+
+        (,,uint borrowBalance,) = token.getAccountSnapshot(target);
+        return borrowBalance;
+    }
+
+    function getPoolLiquidity(address asset) internal view returns (uint) {
+        ICToken token = ICToken(asset);
+        return token.getCash();
+    }
+
+    function getSupplyInterestRateData(address asset) internal view returns (bytes memory) {
+        ICToken token = ICToken(asset);
+        return abi.encode(token.supplyRatePerBlock());
+    }
+
+    function getBorrowInterestRateData(address asset) internal view returns (bytes memory) {
+        ICToken token = ICToken(asset);
+        return abi.encode(token.borrowRatePerBlock());
+    }
+
+    function getSupply(address target, address asset) internal view returns (Defi.Position memory) {
         return Defi.Position(
-            abi.encode(asset),               // id
-            abi.encode(asset, asset.name()), // currency
-            asset.balanceOfUnderlying(target),
-            asset.getCash(),
+            getPositionID(asset),
+            getPositionCurrency(asset),
+            getSupplyAmount(target, asset),
+            getPoolLiquidity(asset),
             0,
-            abi.encode(asset.supplyRatePerBlock())
+            getSupplyInterestRateData(asset)
         );
     }
 
-    function getBorrow(address target, ICToken asset) internal view returns (Defi.Position memory) {
-        (,,uint borrowBalance,) = asset.getAccountSnapshot(target);
+    function getBorrow(address target, address asset) internal view returns (Defi.Position memory) {
         return Defi.Position(
-            abi.encode(asset),               // id
-            abi.encode(asset, asset.name()), // currency
-            borrowBalance,
+            getPositionID(asset),
+            getPositionCurrency(asset),
+            getBorrowAmount(target, asset),
             0,
             0,
-            abi.encode(asset.borrowRatePerBlock())
+            getBorrowInterestRateData(asset)
         );
     }
 
@@ -67,21 +108,20 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
 
         Defi.Position[] memory borrows = new Defi.Position[](assets.length);
         Defi.Position[] memory supplies = new Defi.Position[](assets.length);
-        uint8 supplyIndex = 0;
-        uint8 borrowIndex = 0;
+        uint32 supplyIndex = 0;
+        uint32 borrowIndex = 0;
         uint totalSupplyEth = 0;
         uint totalBorrowEth = 0;
 
-        for (uint8 i = 0; i < assets.length; i++) {
-            ICToken asset = ICToken(assets[i]);
-            if (hasSupply(target, asset) == true) {
-                supplies[supplyIndex] = getSupply(target, asset);
-                totalSupplyEth += oracle.getUnderlyingPrice(address(asset))*supplies[supplyIndex].amount;
+        for (uint32 i = 0; i < assets.length; i++) {
+            if (hasSupply(target, assets[i]) == true) {
+                supplies[supplyIndex] = getSupply(target, assets[i]);
+                totalSupplyEth += oracle.getUnderlyingPrice(assets[i])*supplies[supplyIndex].amount;
                 supplyIndex += 1;
             }
-            if (hasBorrow(target, asset) == true) {
-                borrows[borrowIndex] = getBorrow(target, asset);
-                totalBorrowEth += oracle.getUnderlyingPrice(address(asset))*borrows[borrowIndex].amount;
+            if (hasBorrow(target, assets[i]) == true) {
+                borrows[borrowIndex] = getBorrow(target, assets[i]);
+                totalBorrowEth += oracle.getUnderlyingPrice(assets[i])*borrows[borrowIndex].amount;
                 borrowIndex += 1;
             }
         }
