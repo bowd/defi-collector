@@ -21,13 +21,13 @@ contract DYDXCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, P
 
     constructor(address[] memory initialDeps) DependencyRegistry(initialDeps, 1) Ownable() public {}
 
-    function getPositionID(uint256 nonce, address market) internal pure returns (bytes memory) {
-        return abi.encode(nonce, market);
+    function getPositionID(uint256 nonce, uint256 marketId, address market) internal pure returns (bytes memory) {
+        return abi.encode(nonce, marketId, market);
     }
 
     function getPositionCurrency(address market) internal view returns (bytes memory) {
-        IERC20 = token = IERC20(market);
-        return abi.encode(asset, token.name());
+        IERC20 token = IERC20(market);
+        return abi.encode(token, token.name());
     }
 
     function getPoolLiquidity(address market) internal view returns (uint) {
@@ -35,12 +35,12 @@ contract DYDXCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, P
         return token.balanceOf(getDependency(ISoloMarginIndex));
     }
 
-    function getSupply(address target, uint256 marketId, Types.Wei amount) internal view returns (Defi.Position memory) {
+    function getSupply(uint256 marketId, Types.Wei memory amount) internal view returns (Defi.Position memory) {
         ISoloMargin soloMargin = ISoloMargin(getDependency(ISoloMarginIndex));
         address market = soloMargin.getMarketTokenAddress(marketId);
 
         return Defi.Position(
-            getPositionID(market),
+            getPositionID(0, marketId, market),
             getPositionCurrency(market),
             amount.value,
             getPoolLiquidity(market),
@@ -49,10 +49,13 @@ contract DYDXCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, P
         );
     }
 
-    function getBorrow(address target, uint256 marketId, Types.Wei amount) internal view returns (Defi.Position memory) {
+    function getBorrow(uint256 marketId, Types.Wei memory amount) internal view returns (Defi.Position memory) {
+        ISoloMargin soloMargin = ISoloMargin(getDependency(ISoloMarginIndex));
+        address market = soloMargin.getMarketTokenAddress(marketId);
+
         return Defi.Position(
-            getPositionID(asset),
-            getPositionCurrency(asset),
+            getPositionID(0, marketId, market),
+            getPositionCurrency(market),
             amount.value,
             0,
             0,
@@ -62,24 +65,35 @@ contract DYDXCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, P
 
     function getPositions(address target) public view returns (Defi.PlatformResult memory) {
         ISoloMargin soloMargin = ISoloMargin(getDependency(ISoloMarginIndex));
-        Account.Info account = Account.Info(target, 0);
+        Account.Info memory account = Account.Info(target, 0);
         uint256 numMarkets = soloMargin.getNumMarkets();
-        Defi.Position[] supplies = new Defi.Positions[](markets.length);
-        Defi.Position[] borrows = new Defi.Positions[](markets.length);
+        Defi.Position[] memory supplies = new Defi.Position[](numMarkets);
+        Defi.Position[] memory borrows = new Defi.Position[](numMarkets);
         uint8 supplyIndex = 0;
         uint8 borrowIndex = 0;
+        uint256 totalSupplyUSD;
+        uint256 totalBorrowUSD;
+
 
         for (uint8 mi = 0; mi < numMarkets; mi++) {
-            Types.Wei balance = soloMargin.getAccountWei(account, mi);
+            Types.Wei memory balance = soloMargin.getAccountWei(account, mi);
             if (balance.value != 0) {
                 if (balance.sign == true) {
-                    supplies[supplyIndex] = getSupply(target, mi, balance);
+                    supplies[supplyIndex]  = getSupply(mi, balance);
                     supplyIndex += 1;
+                    totalSupplyUSD += supplies[supplyIndex].amount * soloMargin.getMarketPrice(mi).value;
                 } else {
-                    borrows[borrowIndex] = getBorrow(target, mi, balance);
+                    borrows[borrowIndex] = getBorrow(mi, balance);
                     borrowIndex += 1;
+                    totalBorrowUSD += borrows[borrowIndex].amount * soloMargin.getMarketPrice(mi).value;
                 }
             }
+        }
+
+        uint256 colRatio = totalSupplyUSD / totalBorrowUSD;
+        for (uint8 i = 0; i < borrowIndex; i++) {
+            borrows[i].colRatio = colRatio;
+
         }
 
         return Defi.PlatformResult(

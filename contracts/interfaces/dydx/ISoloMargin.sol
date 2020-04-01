@@ -10,10 +10,11 @@ interface ISoloMargin {
     function getNumMarkets() external view returns (uint256);
     function getAccountValues(Account.Info calldata account) external view returns (Monetary.Value memory, Monetary.Value memory);
     function getAccountStatus(Account.Info calldata account) external view returns (Account.Status);
-    function getAccountWei(Account.Info calldata account, uint256 marketId) external view returns (Types.Wei);
+    function getAccountWei(Account.Info calldata account, uint256 marketId) external view returns (Types.Wei memory);
     function getMarketTokenAddress(uint256 marketId) external view returns (address);
     function getMarketCurrentIndex(uint256 marketId) external view returns (Interest.Index memory);
     function getMarketInterestRate(uint256 marketId) external view returns (Interest.Rate memory);
     function getMarketTotalPar(uint256 marketId) external view returns (Types.TotalPar memory);
+    function getMarketPrice(uint256 marketId) external view returns (Monetary.Price memory);
 }
 

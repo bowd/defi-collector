@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
-import "./interfaces/compound/IPriceOracle.sol";
+import "./interfaces/compound/ICompoundPriceOracle.sol";
 import "./interfaces/compound/IComptroller.sol";
 import "./interfaces/compound/ICToken.sol";
 
@@ -20,7 +20,7 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
     function platformID() public view returns (bytes32) { return platformID_; }
 
     uint8 constant IComptrollerIndex = 0;
-    uint8 constant IPriceOracleIndex = 1;
+    uint8 constant ICompoundPriceOracleIndex = 1;
 
     constructor(address[] memory initialDeps) DependencyRegistry(initialDeps, 2) Ownable() public {}
 
@@ -95,7 +95,7 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
     }
 
     function getPositions(address target) public view returns (Defi.PlatformResult memory) {
-        IPriceOracle oracle = IPriceOracle(getDependency(IPriceOracleIndex));
+        ICompoundPriceOracle oracle = ICompoundPriceOracle(getDependency(ICompoundPriceOracleIndex));
         IComptroller comp = IComptroller(getDependency(IComptrollerIndex));
 
         address[] memory assets = comp.getAssetsIn(target);
