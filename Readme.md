@@ -20,10 +20,11 @@ It aims to normalize the data associated with a defi positions across protocols.
 ## Contracts
 
 The system consists of:
-    - `DefiCollectorRegistry` and
-    - multiple contracts that implement `IDefiPlatformCollector`:
-        - `MakerCollector`
-        - `CompoundCollector`
+
+- `DefiCollectorRegistry` and
+- multiple contracts that implement `IDefiPlatformCollector`:
+    - `MakerCollector`
+    - `CompoundCollector`
 
 It also introduces a `DependencyRegistry` contract that helps manage external dependencies. It's used as part of the platform collector implementations to maintain references to the platform dependencies (e.g Maker contracts, Compound contracts, etc).
 
