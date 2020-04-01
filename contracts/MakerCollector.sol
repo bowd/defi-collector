@@ -2,6 +2,7 @@ pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "@openzeppelin/contracts/math/SafeMath.sol";
 
 import "./interfaces/maker/IProxyRegistry.sol";
 import "./interfaces/maker/IGetCdps.sol";
@@ -15,6 +16,7 @@ import "./lib/DependencyRegistry.sol";
 import "./lib/PositionsHelper.sol";
 
 contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, PositionsHelper {
+    using SafeMath for uint256;
     bytes32 platformID_ = 0x4d616b65724d4344000000000000000000000000000000000000000000000000; // MakerMCD
     function isDefiPlatformCollector() public pure returns (bool) { return true; }
     function platformID() public view returns (bytes32) { return platformID_; }

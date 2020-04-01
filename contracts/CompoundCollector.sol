@@ -1,17 +1,20 @@
 pragma solidity >=0.4.25 <0.7.0;
 pragma experimental ABIEncoderV2;
 
+import "@openzeppelin/contracts/math/SafeMath.sol";
+
 import "./interfaces/compound/IPriceOracle.sol";
 import "./interfaces/compound/IComptroller.sol";
 import "./interfaces/compound/ICToken.sol";
 
 import "./IDefiPlatformCollector.sol";
-import "./lib/Exponential.sol";
-import "./lib/CarefulMath.sol";
+import "./lib/compound/Exponential.sol";
 import "./lib/PositionsHelper.sol";
 import "./lib/DependencyRegistry.sol";
 
 contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, Exponential, PositionsHelper {
+    using SafeMath for uint256;
+
     bytes32 platformID_ = 0x436f6d706f756e64000000000000000000000000000000000000000000000000; // Compound
     function isDefiPlatformCollector() public pure returns (bool) { return true; }
     function platformID() public view returns (bytes32) { return platformID_; }
