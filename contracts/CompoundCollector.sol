@@ -7,6 +7,7 @@ import "./interfaces/compound/ICompoundPriceOracle.sol";
 import "./interfaces/compound/IComptroller.sol";
 import "./interfaces/compound/ICToken.sol";
 import "./interfaces/IDefiPlatformCollector.sol";
+import "./interfaces/IERC20.sol";
 
 import "./lib/compound/Exponential.sol";
 import "./lib/PositionsHelper.sol";
@@ -44,11 +45,15 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
     }
     
     function getPositionCurrency(address asset) public view returns (bytes memory) {
-        ICToken token = ICToken(asset);
+        ICToken cToken = ICToken(asset);
         address underlying = address(0);
-        string memory symbol = token.symbol();
+        string memory symbol = cToken.symbol();
         if (!stringsEqual(symbol, "cETH")) {
-            underlying = token.underlying();
+            underlying = cToken.underlying();
+            IERC20 token = IERC20(underlying);
+            symbol = token.symbol();
+        } else {
+            symbol = "ETH";
         }
         return abi.encode(symbol, underlying);
     }

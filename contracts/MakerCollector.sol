@@ -9,10 +9,12 @@ import "./interfaces/maker/IVat.sol";
 import "./interfaces/maker/ISpotter.sol";
 import "./interfaces/maker/IDssDeploy.sol";
 import "./interfaces/maker/IJug.sol";
+import "./interfaces/maker/IJoin.sol";
 import "./interfaces/IDefiPlatformCollector.sol";
 
 import "./lib/DependencyRegistry.sol";
 import "./lib/PositionsHelper.sol";
+import "./interfaces/IERC20.sol";
 
 contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, PositionsHelper {
     using SafeMath for uint256;
@@ -67,6 +69,20 @@ contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, 
         return (rate, spot, ink, art, mat, duty);
     }
 
+    function getCurrency(bytes32 ilk) internal view returns (bytes memory) {
+        IDssDeploy deploy = IDssDeploy(getDependency(DeployIndex));
+        (, address join_) = deploy.ilks(ilk);
+        IJoin join = IJoin(join_);
+        IERC20 token = IERC20(join.gem());
+        return abi.encode(token.symbol(), token);
+    }
+
+    function getDai() internal view returns (bytes memory) {
+        IDssDeploy deploy = IDssDeploy(getDependency(DeployIndex));
+        IERC20 dai = IERC20(deploy.dai());
+        return abi.encode(dai.symbol(), dai);
+    }
+
     function getPositions(address target) public view returns (Defi.PlatformResult memory) {
         (uint256[] memory ids, address[] memory urns, bytes32[] memory ilks) = getCdps(target);
         Defi.Position[] memory borrows = new Defi.Position[](ids.length);
@@ -78,7 +94,7 @@ contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, 
 
             supplies[i] = Defi.Position(
                 abi.encodePacked(ids[i]),
-                abi.encodePacked(ilks[i]),
+                getCurrency(ilks[i]),
                 ink,
                 0,
                 0,
@@ -88,7 +104,7 @@ contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, 
             if (art > 0) {
                 borrows[borrowIndex] = Defi.Position(
                     abi.encodePacked(ids[i]),
-                    abi.encodePacked("DAI"),
+                    getDai(),
                     (art * rate),
                     0,
                     (ink * spot * mat) / (art * rate),
