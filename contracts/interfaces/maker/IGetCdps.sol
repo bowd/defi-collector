@@ -1,4 +1,4 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 
 interface IGetCdps {
     function getCdpsAsc(address manager, address guy) external view returns (

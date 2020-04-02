@@ -1,4 +1,4 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 
 interface ICToken {
     function getAccountSnapshot(address) external view returns (uint, uint, uint, uint);
@@ -7,4 +7,6 @@ interface ICToken {
     function borrowRatePerBlock() external view returns (uint);
     function supplyRatePerBlock() external view returns (uint);
     function name() external view returns (string memory);
+    function symbol() external view returns (string memory);
+    function underlying() external view returns (address);
 }

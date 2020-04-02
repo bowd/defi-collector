@@ -1,4 +1,4 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 
 interface IComptroller {
     function getAssetsIn(address account) external view returns (address[] memory assets);

@@ -1,4 +1,4 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 
 interface IVat {
     function ilks(bytes32 ilk) external view returns (uint256 Art, uint256 rate, uint256 spot, uint256 line, uint256 dust);

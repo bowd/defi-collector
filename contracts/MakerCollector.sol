@@ -1,8 +1,7 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./vendor/SafeMath.sol";
 
 import "./interfaces/maker/IProxyRegistry.sol";
 import "./interfaces/maker/IGetCdps.sol";
@@ -10,21 +9,21 @@ import "./interfaces/maker/IVat.sol";
 import "./interfaces/maker/ISpotter.sol";
 import "./interfaces/maker/IDssDeploy.sol";
 import "./interfaces/maker/IJug.sol";
+import "./interfaces/IDefiPlatformCollector.sol";
 
-import "./IDefiPlatformCollector.sol";
 import "./lib/DependencyRegistry.sol";
 import "./lib/PositionsHelper.sol";
 
 contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, PositionsHelper {
     using SafeMath for uint256;
-    bytes32 platformID_ = 0x4d616b65724d4344000000000000000000000000000000000000000000000000; // MakerMCD
+    bytes32 constant public platformID = 0x4d616b65724d4344000000000000000000000000000000000000000000000000; // MakerMCD
     function isDefiPlatformCollector() public pure returns (bool) { return true; }
-    function platformID() public view returns (bytes32) { return platformID_; }
+    // function platformID() public view returns (bytes32) { return platformID_; }
 
-    uint8 constant ProxyRegistryIndex = 0;
-    uint8 constant GetCdpsIndex = 1;
-    uint8 constant DeployIndex = 2;
-    uint8 constant CdpManagerIndex = 3;
+    uint constant ProxyRegistryIndex = 0;
+    uint constant GetCdpsIndex = 1;
+    uint constant DeployIndex = 2;
+    uint constant CdpManagerIndex = 3;
 
     constructor(address[] memory initialDeps) DependencyRegistry(initialDeps, 4) Ownable() public {}
 
@@ -72,7 +71,7 @@ contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, 
         (uint256[] memory ids, address[] memory urns, bytes32[] memory ilks) = getCdps(target);
         Defi.Position[] memory borrows = new Defi.Position[](ids.length);
         Defi.Position[] memory supplies = new Defi.Position[](ids.length);
-        uint8 borrowIndex = 0;
+        uint borrowIndex = 0;
 
         for (uint i = 0; i < ids.length; i++) {
             (uint256 rate, uint256 spot, uint256 ink, uint256 art, uint256 mat, uint256 duty) = getCdp(ilks[i], urns[i]);
@@ -100,7 +99,7 @@ contract MakerCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, 
         }
 
         return Defi.PlatformResult(
-            platformID_,
+            platformID,
             repackPositions(borrows, borrowIndex),
             supplies
         );

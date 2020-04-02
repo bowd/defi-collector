@@ -1,12 +1,12 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 
-import "@openzeppelin/contracts/ownership/Ownable.sol";
+import "../vendor/Ownable.sol";
 
 contract DependencyRegistry is Ownable {
     mapping(uint => address) internal dependencies;
     uint internal maxDeps;
 
-    constructor(address[] memory initialDeps, uint8 maxDeps_) public {
+    constructor(address[] memory initialDeps, uint maxDeps_) public {
         require(initialDeps.length <= maxDeps_, "dependency-registry:initial-deps-too-large");
         maxDeps = maxDeps_;
 
@@ -15,12 +15,12 @@ contract DependencyRegistry is Ownable {
         }
     }
 
-    function setDependency(uint8 index, address dependency) public onlyOwner {
+    function setDependency(uint index, address dependency) public onlyOwner {
         require(index <= maxDeps, "dependency-registry:index-out-of-range");
         dependencies[index] = dependency;
     }
 
-    function getDependency(uint8 index) public view returns (address) {
+    function getDependency(uint index) public view returns (address) {
         require(index < maxDeps, "dependency-registry:index-out-of-range");
         address addr = dependencies[index];
         require(addr != address(0), "dependency-registry:dep-not-set");

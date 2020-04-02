@@ -1,13 +1,13 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity 0.5.17;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./vendor/SafeMath.sol";
 
 import "./interfaces/compound/ICompoundPriceOracle.sol";
 import "./interfaces/compound/IComptroller.sol";
 import "./interfaces/compound/ICToken.sol";
+import "./interfaces/IDefiPlatformCollector.sol";
 
-import "./IDefiPlatformCollector.sol";
 import "./lib/compound/Exponential.sol";
 import "./lib/PositionsHelper.sol";
 import "./lib/DependencyRegistry.sol";
@@ -19,8 +19,8 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
     function isDefiPlatformCollector() public pure returns (bool) { return true; }
     function platformID() public view returns (bytes32) { return platformID_; }
 
-    uint8 constant IComptrollerIndex = 0;
-    uint8 constant ICompoundPriceOracleIndex = 1;
+    uint constant IComptrollerIndex = 0;
+    uint constant ICompoundPriceOracleIndex = 1;
 
     constructor(address[] memory initialDeps) DependencyRegistry(initialDeps, 2) Ownable() public {}
 
@@ -38,7 +38,10 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
 
     function getPositionCurrency(address asset) internal view returns (bytes memory) {
         ICToken token = ICToken(asset);
-        return abi.encode(asset, token.name());
+        return abi.encode(
+            token.symbol(),
+            token.underlying()
+        );
     }
 
     function getSupplyAmount(address target, address asset) internal view returns (uint) {
@@ -102,12 +105,12 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
 
         Defi.Position[] memory borrows = new Defi.Position[](assets.length);
         Defi.Position[] memory supplies = new Defi.Position[](assets.length);
-        uint32 supplyIndex = 0;
-        uint32 borrowIndex = 0;
+        uint supplyIndex = 0;
+        uint borrowIndex = 0;
         uint totalSupplyEth = 0;
         uint totalBorrowEth = 0;
 
-        for (uint32 i = 0; i < assets.length; i++) {
+        for (uint i = 0; i < assets.length; i++) {
             if (hasSupply(target, assets[i]) == true) {
                 supplies[supplyIndex] = getSupply(target, assets[i]);
                 totalSupplyEth += oracle.getUnderlyingPrice(assets[i])*supplies[supplyIndex].amount;
@@ -127,7 +130,7 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
             colRatio = totalSupplyEth / totalBorrowEth * 100;
         }
 
-        for (uint8 i = 0; i < borrowIndex; i++) {
+        for (uint i = 0; i < borrowIndex; i++) {
             borrows[i].colRatio = colRatio;
         }
 

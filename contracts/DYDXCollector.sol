@@ -1,12 +1,12 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 pragma experimental ABIEncoderV2;
 
-import "@openzeppelin/contracts/math/SafeMath.sol";
+import "./vendor/SafeMath.sol";
 
 import "./interfaces/dydx/ISoloMargin.sol";
 import "./interfaces/IERC20.sol";
+import "./interfaces/IDefiPlatformCollector.sol";
 
-import "./IDefiPlatformCollector.sol";
 import "./lib/PositionsHelper.sol";
 import "./lib/DependencyRegistry.sol";
 
@@ -17,7 +17,7 @@ contract DYDXCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, P
     function isDefiPlatformCollector() public pure returns (bool) { return true; }
     function platformID() public view returns (bytes32) { return platformID_; }
 
-    uint8 constant ISoloMarginIndex = 0;
+    uint constant ISoloMarginIndex = 0;
 
     constructor(address[] memory initialDeps) DependencyRegistry(initialDeps, 1) Ownable() public {}
 
@@ -69,13 +69,13 @@ contract DYDXCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, P
         uint256 numMarkets = soloMargin.getNumMarkets();
         Defi.Position[] memory supplies = new Defi.Position[](numMarkets);
         Defi.Position[] memory borrows = new Defi.Position[](numMarkets);
-        uint8 supplyIndex = 0;
-        uint8 borrowIndex = 0;
+        uint supplyIndex = 0;
+        uint borrowIndex = 0;
         uint256 totalSupplyUSD;
         uint256 totalBorrowUSD;
 
 
-        for (uint8 mi = 0; mi < numMarkets; mi++) {
+        for (uint mi = 0; mi < numMarkets; mi++) {
             Types.Wei memory balance = soloMargin.getAccountWei(account, mi);
             if (balance.value != 0) {
                 if (balance.sign == true) {
@@ -91,7 +91,7 @@ contract DYDXCollector is IDefiPlatformCollector, Ownable, DependencyRegistry, P
         }
 
         uint256 colRatio = totalSupplyUSD / totalBorrowUSD;
-        for (uint8 i = 0; i < borrowIndex; i++) {
+        for (uint i = 0; i < borrowIndex; i++) {
             borrows[i].colRatio = colRatio;
 
         }

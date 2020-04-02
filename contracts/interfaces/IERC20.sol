@@ -1,4 +1,4 @@
-pragma solidity >=0.4.25 <0.7.0;
+pragma solidity ^0.5.17;
 
 interface IERC20 {
     function name() external view returns (string memory);

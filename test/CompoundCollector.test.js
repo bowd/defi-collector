@@ -20,7 +20,7 @@ const CompoundCollector = contract.fromArtifact('CompoundCollector');
 const MockContract = contract.fromArtifact('MockContract');
 const IComptroller = contract.fromArtifact('IComptroller');
 const ICToken = contract.fromArtifact('ICToken');
-const IPriceOracle = contract.fromArtifact('IPriceOracle');
+const IPriceOracle = contract.fromArtifact('ICompoundPriceOracle');
 
 const [ owner, acc0, proxy, urn, pip, cdpManager ] = accounts;
 
