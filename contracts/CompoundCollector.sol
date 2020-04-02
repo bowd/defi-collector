@@ -36,14 +36,23 @@ contract CompoundCollector is IDefiPlatformCollector, Ownable, DependencyRegistr
         return abi.encode(asset);
     }
 
-    function getPositionCurrency(address asset) internal view returns (bytes memory) {
-        ICToken token = ICToken(asset);
-        return abi.encode(
-            token.symbol(),
-            token.underlying()
-        );
+    function stringsEqual(string memory s1, string memory s2) internal pure returns (bool) {
+        if (keccak256(abi.encodePacked(s1)) == keccak256(abi.encodePacked(s2))) {
+            return true;
+        }
+        return false;
     }
-
+    
+    function getPositionCurrency(address asset) public view returns (bytes memory) {
+        ICToken token = ICToken(asset);
+        address underlying = address(0);
+        string memory symbol = token.symbol();
+        if (!stringsEqual(symbol, "cETH")) {
+            underlying = token.underlying();
+        }
+        return abi.encode(symbol, underlying);
+    }
+    
     function getSupplyAmount(address target, address asset) internal view returns (uint) {
         ICToken token = ICToken(asset);
         (,uint tokenBalance,,uint exchangeRateCurrent) = token.getAccountSnapshot(target);
